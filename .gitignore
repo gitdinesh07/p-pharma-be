@@ -1,0 +1,42 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Go build artifacts
+bin/
+dist/
+cover.out
+coverage.out
+coverage/
+
+# Go workspace/cache
+
+# Dependency directories (if used)
+node_modules/
+
+# Environment/config secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE/editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Local runtime data
+tmp/

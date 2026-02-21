@@ -1,0 +1,18 @@
+services:
+  api:
+    build:
+      context: ../..
+      dockerfile: deployments/docker/Dockerfile
+    environment:
+      PORT: 8080
+      JWT_SECRET: dev-secret
+      INTERNAL_API_KEYS: "int1:internal-secret:inventory.write|orders.item_status.write|products.write"
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mongodb
+
+  mongodb:
+    image: mongo:8
+    ports:
+      - "27017:27017"
