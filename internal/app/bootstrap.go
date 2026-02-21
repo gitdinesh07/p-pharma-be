@@ -4,18 +4,21 @@ import (
 	"context"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"ppharma/backend/internal/config"
 	"ppharma/backend/internal/domain/common"
 	"ppharma/backend/internal/domain/order"
-	"ppharma/backend/internal/infra/auth/apikey"
-	jwtinfra "ppharma/backend/internal/infra/auth/jwt"
-	cachememory "ppharma/backend/internal/infra/cache/memory"
-	zaplogger "ppharma/backend/internal/infra/logger/zap"
-	"ppharma/backend/internal/interface/http/handlers"
-	"ppharma/backend/internal/interface/http/middleware"
-	"ppharma/backend/internal/interface/http/routes"
+	"ppharma/backend/internal/http/handlers"
+	"ppharma/backend/internal/http/middleware"
+	"ppharma/backend/internal/http/routes"
+	routesv1 "ppharma/backend/internal/http/routes/v1"
 	repomemory "ppharma/backend/internal/repository/memory"
+	"ppharma/backend/support-pkg/auth/apikey"
+	jwtinfra "ppharma/backend/support-pkg/auth/jwt"
+	cachememory "ppharma/backend/support-pkg/cache/memory"
+	zaplogger "ppharma/backend/support-pkg/logger/zap"
+	"ppharma/backend/support-pkg/queue/filequeue"
+
+	"github.com/gin-gonic/gin"
 )
 
 type Application struct {
@@ -51,7 +54,8 @@ func Build(cfg config.Config) (*Application, error) {
 	repo := repomemory.NewOrderRepository(seed)
 	service := order.NewService(repo, order.DefaultStatusDeriver{})
 	orderHandler := handlers.NewOrderHandler(service)
-	internalHandler := handlers.NewInternalHandler()
+	queue := filequeue.New(cfg.QueueDir)
+	internalHandler := handlers.NewInternalHandler(queue, cfg.QueueTopic)
 	authHandler := handlers.NewAuthHandler()
 	productHandler := handlers.NewProductHandler()
 	paymentHandler := handlers.NewPaymentHandler()
@@ -64,7 +68,7 @@ func Build(cfg config.Config) (*Application, error) {
 		keySecrets = append(keySecrets, common.InternalAPIKeySecret{KeyID: k.ID, RawKey: k.Key, Scopes: k.Scopes})
 	}
 	if len(keySecrets) == 0 {
-		keySecrets = append(keySecrets, common.InternalAPIKeySecret{KeyID: "default", RawKey: "internal-secret", Scopes: []string{"inventory.write", "orders.item_status.write", "products.write"}})
+		keySecrets = append(keySecrets, common.InternalAPIKeySecret{KeyID: "default", RawKey: "internal-secret", Scopes: []string{"inventory.write", "orders.item_status.write", "products.write", "queue.write"}})
 	}
 	sp := apikey.NewStaticSecretProvider(keySecrets)
 	keyAuth, err := apikey.NewAuthenticator(context.Background(), sp)
@@ -75,7 +79,7 @@ func Build(cfg config.Config) (*Application, error) {
 	engine := gin.New()
 	engine.Use(gin.Recovery(), middleware.RequestLogger(logger))
 
-	routeDeps := routes.Deps{
+	routeDeps := routesv1.Deps{
 		Auth:         authHandler,
 		Order:        orderHandler,
 		Product:      productHandler,
@@ -85,21 +89,24 @@ func Build(cfg config.Config) (*Application, error) {
 	}
 
 	routes.RegisterHealth(engine)
+	if cfg.AppEnv != "production" {
+		routes.RegisterSwagger(engine)
+	}
 
-	v1 := engine.Group("/api/v1")
-	routes.RegisterAuth(v1, routeDeps)
+	apiV1 := engine.Group("/api/v1")
+	routesv1.RegisterAuth(apiV1, routeDeps)
 
-	customer := v1.Group("/customer")
+	customer := apiV1.Group("/customer")
 	customer.Use(middleware.JWTAuth(jwtProvider), middleware.RequireRole("customer"))
-	routes.RegisterCustomer(customer, routeDeps)
+	routesv1.RegisterCustomer(customer, routeDeps)
 
-	admin := v1.Group("/admin")
+	admin := apiV1.Group("/admin")
 	admin.Use(middleware.JWTAuth(jwtProvider), middleware.RequireRole("admin"))
-	routes.RegisterAdmin(admin, routeDeps)
+	routesv1.RegisterAdmin(admin, routeDeps)
 
-	internal := v1.Group("/admin/internal")
+	internal := apiV1.Group("/admin/internal")
 	internal.Use(middleware.APIKeyAuth(keyAuth))
-	routes.RegisterAdminInternal(internal, routeDeps)
+	routesv1.RegisterAdminInternal(internal, routeDeps)
 
 	return &Application{Engine: engine, Config: cfg}, nil
 }

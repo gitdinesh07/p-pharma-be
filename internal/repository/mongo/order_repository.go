@@ -6,7 +6,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"ppharma/backend/internal/domain/order"
-	mongowrap "ppharma/backend/internal/infra/db/mongo"
+	mongowrap "ppharma/backend/support-pkg/db/mongo"
 )
 
 const ordersCollection = "orders"

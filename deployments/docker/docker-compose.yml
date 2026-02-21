@@ -2,17 +2,46 @@ services:
   api:
     build:
       context: ../..
-      dockerfile: deployments/docker/Dockerfile
+      dockerfile: deployments/docker/Dockerfile.api
     environment:
+      APP_ENV: development
       PORT: 8080
       JWT_SECRET: dev-secret
-      INTERNAL_API_KEYS: "int1:internal-secret:inventory.write|orders.item_status.write|products.write"
+      DB: ${DB}
+      INTERNAL_API_KEYS: "int1:internal-secret:inventory.write|orders.item_status.write|products.write|queue.write"
+      QUEUE_DIR: /shared-queue
+      QUEUE_TOPIC: inventory.sync
     ports:
       - "8080:8080"
-    depends_on:
-      - mongodb
+    volumes:
+      - queue_data:/shared-queue
 
-  mongodb:
-    image: mongo:8
-    ports:
-      - "27017:27017"
+  cron:
+    build:
+      context: ../..
+      dockerfile: deployments/docker/Dockerfile.cron
+    environment:
+      APP_ENV: development
+      DB: ${DB}
+      QUEUE_DIR: /shared-queue
+      QUEUE_TOPIC: inventory.sync
+      CRON_TICK_SECONDS: 10
+    volumes:
+      - queue_data:/shared-queue
+
+  worker:
+    build:
+      context: ../..
+      dockerfile: deployments/docker/Dockerfile.worker
+    environment:
+      APP_ENV: development
+      DB: ${DB}
+      QUEUE_DIR: /shared-queue
+      QUEUE_TOPIC: inventory.sync
+      WORKER_POLL_SECONDS: 2
+      WORKER_CONSUMER_ID: worker-1
+    volumes:
+      - queue_data:/shared-queue
+
+volumes:
+  queue_data:

@@ -1,0 +1,65 @@
+openapi: 3.0.3
+info:
+  title: PPharma Backend API
+  version: 1.0.0
+servers:
+  - url: http://localhost:4545
+paths:
+  /health/live:
+    get:
+      summary: Liveness check
+      responses:
+        '200':
+          description: OK
+  /health/ready:
+    get:
+      summary: Readiness check
+      responses:
+        '200':
+          description: Ready
+  /api/v1/customer/orders/{orderId}:
+    get:
+      summary: Get customer order with item statuses
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Order details
+  /api/v1/admin/orders/{orderId}/items/{itemId}/status:
+    patch:
+      summary: Update order item status (admin JWT)
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Updated
+  /api/v1/admin/internal/orders/{orderId}/items/{itemId}/status:
+    patch:
+      summary: Update order item status (internal API key)
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Updated
