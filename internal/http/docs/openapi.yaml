@@ -40,6 +40,27 @@ paths:
       responses:
         '200':
           description: OK
+  /api/v1/auth/customer/reset-password:
+    post:
+      summary: Reset Customer Password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                identifier:
+                  type: string
+                  description: Mobile or Email
+                new_password:
+                  type: string
+              required:
+                - identifier
+                - new_password
+      responses:
+        '200':
+          description: OK
   /api/v1/auth/user/login:
     post:
       summary: User login (internal admin)

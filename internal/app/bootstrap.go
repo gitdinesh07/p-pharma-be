@@ -12,6 +12,7 @@ import (
 	"ppharma/backend/internal/http/routes"
 	routesv1 "ppharma/backend/internal/http/routes/v1"
 	repomemory "ppharma/backend/internal/repository/memory"
+	appservice "ppharma/backend/internal/service"
 	"ppharma/backend/support-pkg/auth/apikey"
 	jwtinfra "ppharma/backend/support-pkg/auth/jwt"
 	cachememory "ppharma/backend/support-pkg/cache/memory"
@@ -57,7 +58,8 @@ func Build(cfg config.Config) (*Application, error) {
 	queue := filequeue.New(cfg.QueueDir)
 	internalHandler := handlers.NewInternalHandler(queue, cfg.QueueTopic)
 	// Mock repo injections (to be wired into real mongo)
-	authHandler := handlers.NewAuthHandler(nil, nil, jwtinfra.NewProvider(cfg.JWTSecret))
+	authService := appservice.NewAuthService(nil, nil, jwtinfra.NewProvider(cfg.JWTSecret))
+	authHandler := handlers.NewAuthHandler(authService)
 	productHandler := handlers.NewProductHandler()
 	paymentHandler := handlers.NewPaymentHandler()
 	consultationHandler := handlers.NewConsultationHandler()
