@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"time"
 
-	jwtv5 "github.com/golang-jwt/jwt/v5"
 	"ppharma/backend/internal/domain/common"
+
+	jwtv5 "github.com/golang-jwt/jwt/v5"
 )
 
 type Provider struct {
@@ -32,10 +33,12 @@ func (p *Provider) ParseAccessToken(token string) (*common.Principal, error) {
 	}
 	sub, _ := claims["sub"].(string)
 	role, _ := claims["role"].(string)
+	email, _ := claims["email"].(string)
+	mobile, _ := claims["mobile"].(string)
 	if sub == "" || role == "" {
 		return nil, fmt.Errorf("missing required claims")
 	}
-	return &common.Principal{ID: sub, Role: role}, nil
+	return &common.Principal{ID: sub, Role: role, Email: email, Mobile: mobile}, nil
 }
 
 func (p *Provider) GenerateToken(principal *common.Principal, expiry time.Duration) (string, error) {
@@ -43,6 +46,12 @@ func (p *Provider) GenerateToken(principal *common.Principal, expiry time.Durati
 		"sub":  principal.ID,
 		"role": principal.Role,
 		"exp":  time.Now().Add(expiry).Unix(),
+	}
+	if principal.Email != "" {
+		claims["email"] = principal.Email
+	}
+	if principal.Mobile != "" {
+		claims["mobile"] = principal.Mobile
 	}
 	token := jwtv5.NewWithClaims(jwtv5.SigningMethodHS256, claims)
 	return token.SignedString(p.secret)

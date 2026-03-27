@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"ppharma/backend/internal/domain/common"
@@ -49,7 +50,14 @@ func (h *AuthHandler) CustomerLogin(c *gin.Context) {
 		return
 	}
 
-	token, err := h.jwtProvider.GenerateToken(&common.Principal{ID: "mock-customer-id", Role: "customer"}, 30*24*time.Hour)
+	var email, mobile string
+	if strings.Contains(req.Identifier, "@") {
+		email = req.Identifier
+	} else {
+		mobile = req.Identifier
+	}
+
+	token, err := h.jwtProvider.GenerateToken(&common.Principal{ID: "mock-customer-id", Role: "customer", Email: email, Mobile: mobile}, 30*24*time.Hour)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, api.APIResponse[any]{Success: false, Error: &api.APIError{Code: "INTERNAL_ERROR", Message: "failed to generate token"}})
 		return
@@ -74,7 +82,14 @@ func (h *AuthHandler) UserLogin(c *gin.Context) {
 		return
 	}
 
-	token, err := h.jwtProvider.GenerateToken(&common.Principal{ID: "mock-user-id", Role: "admin"}, 24*time.Hour)
+	var email, mobile string
+	if strings.Contains(req.Identifier, "@") {
+		email = req.Identifier
+	} else {
+		mobile = req.Identifier
+	}
+
+	token, err := h.jwtProvider.GenerateToken(&common.Principal{ID: "mock-user-id", Role: "admin", Email: email, Mobile: mobile}, 24*time.Hour)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, api.APIResponse[any]{Success: false, Error: &api.APIError{Code: "INTERNAL_ERROR", Message: "failed to generate token"}})
 		return
