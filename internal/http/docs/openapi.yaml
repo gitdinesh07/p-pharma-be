@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  title: PPharma Backend API
+  title: Backend Service
   version: 1.0.0
 servers:
   - url: http://localhost:4545
@@ -17,6 +17,112 @@ paths:
       responses:
         '200':
           description: Ready
+
+  # Auth Routes
+  /api/v1/auth/customer/login:
+    post:
+      summary: Customer login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                identifier:
+                  type: string
+                  description: Mobile or Email
+                password:
+                  type: string
+              required:
+                - identifier
+                - password
+      responses:
+        '200':
+          description: OK
+  /api/v1/auth/user/login:
+    post:
+      summary: User login (internal admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                identifier:
+                  type: string
+                  description: Mobile or Email
+                password:
+                  type: string
+              required:
+                - identifier
+                - password
+      responses:
+        '200':
+          description: OK
+  /api/v1/auth/refresh:
+    post:
+      summary: Refresh token
+      responses:
+        '200':
+          description: OK
+  /api/v1/auth/logout:
+    post:
+      summary: User logout
+      responses:
+        '200':
+          description: OK
+  /api/v1/auth/sessions:
+    get:
+      summary: List sessions
+      responses:
+        '200':
+          description: OK
+  /api/v1/auth/sessions/{sessionId}:
+    delete:
+      summary: Revoke session
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+
+  # Customer Routes
+  /api/v1/customer:
+    post:
+      summary: Create customer
+      responses:
+        '200':
+          description: OK
+  /api/v1/customer/{id}:
+    get:
+      summary: Get customer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+    put:
+      summary: Update customer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+
   /api/v1/customer/orders/{orderId}:
     get:
       summary: Get customer order with item statuses
@@ -29,6 +135,63 @@ paths:
       responses:
         '200':
           description: Order details
+  /api/v1/customer/orders/{orderId}/payments:
+    get:
+      summary: List order payments
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+
+  /api/v1/customer/products:
+    get:
+      summary: List products
+      responses:
+        '200':
+          description: OK
+  /api/v1/customer/products/{productId}:
+    get:
+      summary: Get product
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+
+  /api/v1/customer/consultations:
+    post:
+      summary: Create consultation
+      responses:
+        '200':
+          description: OK
+    get:
+      summary: List consultations
+      responses:
+        '200':
+          description: OK
+  /api/v1/customer/consultations/{consultationId}:
+    get:
+      summary: Get consultation
+      parameters:
+        - name: consultationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+
+  # Admin Routes
   /api/v1/admin/orders/{orderId}/items/{itemId}/status:
     patch:
       summary: Update order item status (admin JWT)
@@ -46,6 +209,72 @@ paths:
       responses:
         '200':
           description: Updated
+
+  /api/v1/admin/products:
+    post:
+      summary: Create product
+      responses:
+        '200':
+          description: OK
+  /api/v1/admin/products/{productId}:
+    patch:
+      summary: Update product
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+  /api/v1/admin/inventory/{productId}/stock:
+    patch:
+      summary: Update product stock
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+
+  /api/v1/admin/payments/{paymentId}/status:
+    patch:
+      summary: Update payment status
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+
+  /api/v1/admin/consultations/{consultationId}/status:
+    patch:
+      summary: Update consultation status
+      parameters:
+        - name: consultationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+
+  # Admin Internal Routes
+  /api/v1/admin/internal/inventory/sync:
+    post:
+      summary: Sync inventory
+      responses:
+        '200':
+          description: OK
+
   /api/v1/admin/internal/orders/{orderId}/items/{itemId}/status:
     patch:
       summary: Update order item status (internal API key)
@@ -63,3 +292,17 @@ paths:
       responses:
         '200':
           description: Updated
+
+  /api/v1/admin/internal/products/bulk-upsert:
+    post:
+      summary: Bulk upsert products
+      responses:
+        '200':
+          description: OK
+
+  /api/v1/admin/internal/queue/publish:
+    post:
+      summary: Publish queue message
+      responses:
+        '200':
+          description: OK

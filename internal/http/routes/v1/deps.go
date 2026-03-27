@@ -9,4 +9,6 @@ type Deps struct {
 	Payment      *handlers.PaymentHandler
 	Consultation *handlers.ConsultationHandler
 	Internal     *handlers.InternalHandler
+	Customer     *handlers.CustomerHandler
 }
+
