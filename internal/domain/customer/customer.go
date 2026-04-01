@@ -11,17 +11,25 @@ var (
 	mobileRegex = regexp.MustCompile(`^91\d{10}$`)
 )
 
+type GenderEnum int
+
+const (
+	GenderMale   GenderEnum = 1
+	GenderFemale GenderEnum = 2
+	GenderOthers GenderEnum = 3
+)
+
 type Customer struct {
-	ID        string    `json:"id" bson:"_id"`
-	Name      string    `json:"name" bson:"name"`
-	Email     string    `json:"email,omitempty" bson:"email,omitempty"`
-	Mobile    string    `json:"mobile,omitempty" bson:"mobile,omitempty"`
-	Password  string    `json:"-" bson:"password,omitempty"`
-	Gender    string    `json:"gender,omitempty" bson:"gender,omitempty"`
-	Age       int       `json:"age,omitempty" bson:"age,omitempty"`
-	Address   Address   `json:"address,omitempty" bson:"address,omitempty"`
-	CreatedAt time.Time `json:"created_at" bson:"created_at"`
-	UpdatedAt time.Time `json:"updated_at" bson:"updated_at"`
+	ID        string     `json:"id" bson:"_id"`
+	Name      string     `json:"name" bson:"name"`
+	Email     string     `json:"email,omitempty" bson:"email,omitempty"`
+	Mobile    string     `json:"mobile,omitempty" bson:"mobile,omitempty"`
+	Password  string     `json:"-" bson:"password,omitempty"`
+	Gender    GenderEnum `json:"gender,omitempty" bson:"gender,omitempty"`
+	Age       int        `json:"age,omitempty" bson:"age,omitempty"`
+	Address   []Address  `json:"address,omitempty" bson:"address,omitempty"`
+	CreatedAt time.Time  `json:"created_at" bson:"created_at"`
+	UpdatedAt time.Time  `json:"updated_at" bson:"updated_at"`
 }
 
 type GeoLocation struct {
@@ -60,8 +68,8 @@ func (c *Customer) Validate() error {
 			return err
 		}
 	}
-	if c.Gender == "" {
-		return errors.New("gender is required")
+	if c.Gender != GenderMale && c.Gender != GenderFemale && c.Gender != GenderOthers {
+		return errors.New("gender is required and must be 1 (Male), 2 (Female), or 3 (Others)")
 	}
 	if c.Age == 0 {
 		return errors.New("age is required")
@@ -83,27 +91,27 @@ func (c *Customer) ValidateMobile() error {
 	return nil
 }
 
-func (c *Customer) ValidateAddress() error {
-	if c.Address.AddressLine1 == "" {
+func (a *Address) ValidateAddress() error {
+	if a.AddressLine1 == "" {
 		return errors.New("address line 1 is required")
 	}
-	if c.Address.City == "" {
+	if a.City == "" {
 		return errors.New("city is required")
 	}
-	if c.Address.State == "" {
+	if a.State == "" {
 		return errors.New("state is required")
 	}
-	if c.Address.Pincode == "" {
+	if a.Pincode == "" {
 		return errors.New("pincode is required")
 	}
-	if c.Address.Country == "" {
-		c.Address.Country = "India"
+	if a.Country == "" {
+		a.Country = "India"
 	}
-	if c.Address.AddressType == "" {
-		c.Address.AddressType = "home"
+	if a.AddressType == "" {
+		a.AddressType = "home"
 	}
-	if c.Address.IsDefault == false {
-		c.Address.IsDefault = true
+	if a.IsDefault == false {
+		a.IsDefault = true
 	}
 	return nil
 }

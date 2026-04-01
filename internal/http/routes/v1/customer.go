@@ -2,8 +2,11 @@ package v1
 
 import "github.com/gin-gonic/gin"
 
-func RegisterCustomer(customer *gin.RouterGroup, deps Deps) {
+func RegisterCustomerPublic(customer *gin.RouterGroup, deps Deps) {
 	customer.POST("", deps.Customer.CreateCustomer)
+}
+
+func RegisterCustomer(customer *gin.RouterGroup, deps Deps) {
 	customer.GET("/:id", deps.Customer.GetCustomer)
 	customer.PUT("/:id", deps.Customer.UpdateCustomer)
 

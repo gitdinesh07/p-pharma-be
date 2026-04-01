@@ -6,6 +6,7 @@ import (
 
 	"ppharma/backend/internal/config"
 	"ppharma/backend/internal/domain/common"
+	"ppharma/backend/internal/domain/customer"
 	"ppharma/backend/internal/domain/order"
 	"ppharma/backend/internal/http/handlers"
 	"ppharma/backend/internal/http/middleware"
@@ -13,13 +14,17 @@ import (
 	routesv1 "ppharma/backend/internal/http/routes/v1"
 	repomemory "ppharma/backend/internal/repository/memory"
 	appservice "ppharma/backend/internal/service"
+	"ppharma/backend/internal/repository/mongo"
 	"ppharma/backend/support-pkg/auth/apikey"
 	jwtinfra "ppharma/backend/support-pkg/auth/jwt"
 	cachememory "ppharma/backend/support-pkg/cache/memory"
+	mongowrap "ppharma/backend/support-pkg/db/mongo"
 	zaplogger "ppharma/backend/support-pkg/logger/zap"
 	"ppharma/backend/support-pkg/queue/filequeue"
 
 	"github.com/gin-gonic/gin"
+	gomongo "go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type Application struct {
@@ -57,14 +62,34 @@ func Build(cfg config.Config) (*Application, error) {
 	orderHandler := handlers.NewOrderHandler(service)
 	queue := filequeue.New(cfg.QueueDir)
 	internalHandler := handlers.NewInternalHandler(queue, cfg.QueueTopic)
-	// Mock repo injections (to be wired into real mongo)
-	authService := appservice.NewAuthService(nil, nil, jwtinfra.NewProvider(cfg.JWTSecret))
+
+	// MongoDB Connection Setup
+	dbCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	mongoClient, err := gomongo.Connect(dbCtx, options.Client().ApplyURI(cfg.DB.DBURI))
+	if err != nil {
+		return nil, err
+	}
+	db := mongoClient.Database(cfg.DB.DBName)
+	mongoDbWrap := mongowrap.NewClient(db)
+
+	customerRepo := mongo.NewCustomerRepository(mongoDbWrap)
+	userRepo := mongo.NewUserRepository(mongoDbWrap)
+	jwtProvider := jwtinfra.NewProvider(cfg.JWTSecret)
+
+	authService := appservice.NewAuthService(customerRepo, userRepo, jwtProvider)
 	authHandler := handlers.NewAuthHandler(authService)
+
+	customerService := customer.NewService(customerRepo)
+	customerHandler := handlers.NewCustomerHandler(customerService)
+
+	userService := appservice.NewUserService(userRepo)
+	userHandler := handlers.NewUserHandler(userService)
+
 	productHandler := handlers.NewProductHandler()
 	paymentHandler := handlers.NewPaymentHandler()
 	consultationHandler := handlers.NewConsultationHandler()
-
-	jwtProvider := jwtinfra.NewProvider(cfg.JWTSecret)
 
 	var keySecrets []common.InternalAPIKeySecret
 	for _, k := range cfg.InternalAPIKey {
@@ -89,6 +114,8 @@ func Build(cfg config.Config) (*Application, error) {
 		Payment:      paymentHandler,
 		Consultation: consultationHandler,
 		Internal:     internalHandler,
+		Customer:     customerHandler,
+		User:         userHandler,
 	}
 
 	routes.RegisterHealth(engine)
@@ -98,6 +125,9 @@ func Build(cfg config.Config) (*Application, error) {
 
 	apiV1 := engine.Group("/api/v1")
 	routesv1.RegisterAuth(apiV1, routeDeps)
+
+	customerPublic := apiV1.Group("/customer")
+	routesv1.RegisterCustomerPublic(customerPublic, routeDeps)
 
 	customer := apiV1.Group("/customer")
 	customer.Use(middleware.JWTAuth(jwtProvider), middleware.RequireRole("customer"))

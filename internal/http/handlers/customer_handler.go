@@ -3,9 +3,10 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
 	"ppharma/backend/internal/domain/customer"
 	"ppharma/backend/pkg/api"
+
+	"github.com/gin-gonic/gin"
 )
 
 type CustomerHandler struct {
@@ -16,11 +17,33 @@ func NewCustomerHandler(service *customer.Service) *CustomerHandler {
 	return &CustomerHandler{service: service}
 }
 
+type CreateCustomerRequest struct {
+	Name     string              `json:"name" binding:"required"`
+	Email    string              `json:"email"`
+	Mobile   string              `json:"mobile"`
+	Password string              `json:"password" binding:"required"`
+	Gender   customer.GenderEnum `json:"gender"`
+	Age      int                 `json:"age"`
+	Address  customer.Address    `json:"address"`
+}
+
 func (h *CustomerHandler) CreateCustomer(c *gin.Context) {
-	var cust customer.Customer
-	if err := c.ShouldBindJSON(&cust); err != nil {
+	var req CreateCustomerRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, api.APIResponse[any]{Success: false, Error: &api.APIError{Code: "BAD_REQUEST", Message: err.Error()}})
 		return
+	}
+
+	cust := customer.Customer{
+		Name:     req.Name,
+		Email:    req.Email,
+		Mobile:   req.Mobile,
+		Password: req.Password,
+		Gender:   req.Gender,
+		Age:      req.Age,
+	}
+	if req.Address.ValidateAddress() == nil {
+		cust.Address = append(cust.Address, req.Address)
 	}
 	if err := h.service.CreateCustomer(&cust); err != nil {
 		c.JSON(http.StatusInternalServerError, api.APIResponse[any]{Success: false, Error: &api.APIError{Code: "CREATE_FAILED", Message: err.Error()}})

@@ -1,6 +1,15 @@
 package user
 
-import "time"
+import (
+	"errors"
+	"regexp"
+	"time"
+)
+
+var (
+	emailRegex  = regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
+	mobileRegex = regexp.MustCompile(`^91\d{10}$`)
+)
 
 type Role string
 
@@ -22,4 +31,25 @@ type Repository interface {
 	GetByID(id string) (*User, error)
 	GetByEmail(email string) (*User, error)
 	GetByMobile(mobile string) (*User, error)
+	Update(user *User) error
+}
+
+func (u *User) Validate() error {
+	if u.Name == "" {
+		return errors.New("name is required")
+	}
+	if u.Email != "" {
+		if !emailRegex.MatchString(u.Email) {
+			return errors.New("invalid email format")
+		}
+	}
+	if u.Mobile != "" {
+		if !mobileRegex.MatchString(u.Mobile) {
+			return errors.New("invalid mobile format")
+		}
+	}
+	if u.Role == "" {
+		return errors.New("role is required")
+	}
+	return nil
 }

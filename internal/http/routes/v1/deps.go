@@ -10,5 +10,6 @@ type Deps struct {
 	Consultation *handlers.ConsultationHandler
 	Internal     *handlers.InternalHandler
 	Customer     *handlers.CustomerHandler
+	User         *handlers.UserHandler
 }
 

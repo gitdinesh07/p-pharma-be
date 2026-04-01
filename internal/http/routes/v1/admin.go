@@ -3,6 +3,10 @@ package v1
 import "github.com/gin-gonic/gin"
 
 func RegisterAdmin(admin *gin.RouterGroup, deps Deps) {
+	users := admin.Group("/users")
+	users.POST("", deps.User.CreateUser)
+	users.PUT("/:id", deps.User.UpdateUser)
+
 	orders := admin.Group("/orders")
 	orders.PATCH("/:orderId/items/:itemId/status", deps.Order.UpdateOrderItemStatus)
 
