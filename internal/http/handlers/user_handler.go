@@ -24,6 +24,7 @@ type CreateUserRequest struct {
 	Email    string    `json:"email"`
 	Mobile   string    `json:"mobile"`
 	Password string    `json:"password" binding:"required"`
+	PhotoURL string    `json:"photo_url"`
 	Role     user.Role `json:"role" binding:"required"`
 }
 
@@ -39,6 +40,7 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 		Email:    req.Email,
 		Mobile:   req.Mobile,
 		Password: req.Password,
+		PhotoURL: req.PhotoURL,
 		Role:     req.Role,
 	}
 
@@ -54,10 +56,11 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 }
 
 type UpdateUserRequest struct {
-	Name   string    `json:"name"`
-	Email  string    `json:"email"`
-	Mobile string    `json:"mobile"`
-	Role   user.Role `json:"role"`
+	Name     string    `json:"name"`
+	Email    string    `json:"email"`
+	Mobile   string    `json:"mobile"`
+	PhotoURL string    `json:"photo_url"`
+	Role     user.Role `json:"role"`
 }
 
 func (h *UserHandler) UpdateUser(c *gin.Context) {
@@ -87,6 +90,9 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 	}
 	if req.Mobile != "" {
 		u.Mobile = req.Mobile
+	}
+	if req.PhotoURL != "" {
+		u.PhotoURL = req.PhotoURL
 	}
 	if req.Role != "" {
 		u.Role = req.Role

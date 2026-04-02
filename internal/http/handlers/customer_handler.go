@@ -22,6 +22,7 @@ type CreateCustomerRequest struct {
 	Email    string              `json:"email"`
 	Mobile   string              `json:"mobile"`
 	Password string              `json:"password" binding:"required"`
+	PhotoURL string              `json:"photo_url"`
 	Gender   customer.GenderEnum `json:"gender"`
 	Age      int                 `json:"age"`
 	Address  customer.Address    `json:"address"`
@@ -39,6 +40,7 @@ func (h *CustomerHandler) CreateCustomer(c *gin.Context) {
 		Email:    req.Email,
 		Mobile:   req.Mobile,
 		Password: req.Password,
+		PhotoURL: req.PhotoURL,
 		Gender:   req.Gender,
 		Age:      req.Age,
 	}
