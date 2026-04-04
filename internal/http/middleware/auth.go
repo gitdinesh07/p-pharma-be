@@ -34,7 +34,7 @@ func JWTAuth(tp common.TokenProvider) gin.HandlerFunc {
 	}
 }
 
-func RequireRole(role string) gin.HandlerFunc {
+func RequireRole(roles ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		v, ok := c.Get(string(auth.ContextPrincipalKey))
 		if !ok {
@@ -45,7 +45,23 @@ func RequireRole(role string) gin.HandlerFunc {
 			return
 		}
 		p, ok := v.(*common.Principal)
-		if !ok || p.Role != role {
+		if !ok {
+			c.AbortWithStatusJSON(http.StatusForbidden, api.APIResponse[any]{
+				Success: false,
+				Error:   &api.APIError{Code: "FORBIDDEN", Message: "insufficient role"},
+			})
+			return
+		}
+
+		matched := false
+		for _, r := range roles {
+			if p.Role == r {
+				matched = true
+				break
+			}
+		}
+
+		if !matched {
 			c.AbortWithStatusJSON(http.StatusForbidden, api.APIResponse[any]{
 				Success: false,
 				Error:   &api.APIError{Code: "FORBIDDEN", Message: "insufficient role"},

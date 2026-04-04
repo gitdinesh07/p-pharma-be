@@ -8,6 +8,7 @@ import (
 	"ppharma/backend/internal/domain/common"
 	"ppharma/backend/internal/domain/customer"
 	"ppharma/backend/internal/domain/order"
+	"ppharma/backend/internal/domain/user"
 	"ppharma/backend/internal/http/handlers"
 	"ppharma/backend/internal/http/middleware"
 	"ppharma/backend/internal/http/routes"
@@ -138,7 +139,7 @@ func Build(cfg config.Config) (*Application, error) {
 	routesv1.RegisterCustomer(customer, routeDeps)
 
 	admin := apiV1.Group("/admin")
-	admin.Use(middleware.JWTAuth(jwtProvider), middleware.RequireRole("admin"))
+	admin.Use(middleware.JWTAuth(jwtProvider), middleware.RequireRole(string(user.RoleAdmin), string(user.RoleSuperAdmin), string(user.RoleGlobalAdmin)))
 	routesv1.RegisterAdmin(admin, routeDeps)
 
 	internal := apiV1.Group("/admin/internal")

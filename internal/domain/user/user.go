@@ -13,7 +13,12 @@ var (
 
 type Role string
 
-const RoleAdmin Role = "admin"
+const (
+	RoleUser        Role = "user"
+	RoleAdmin       Role = "admin"
+	RoleSuperAdmin  Role = "super_admin"
+	RoleGlobalAdmin Role = "global_admin"
+)
 
 type User struct {
 	ID         string    `json:"id" bson:"_id"`

@@ -1,12 +1,20 @@
 package v1
 
-import "github.com/gin-gonic/gin"
+import (
+	"ppharma/backend/internal/domain/user"
+	"ppharma/backend/internal/http/middleware"
+
+	"github.com/gin-gonic/gin"
+)
 
 func RegisterAdmin(admin *gin.RouterGroup, deps Deps) {
+	// SuperAdmin / GlobalAdmin ONLY
 	users := admin.Group("/users")
+	users.Use(middleware.RequireRole(string(user.RoleSuperAdmin), string(user.RoleGlobalAdmin)))
 	users.POST("", deps.User.CreateUser)
 	users.PUT("/:id", deps.User.UpdateUser)
 
+	// Available to Admin, SuperAdmin and GlobalAdmin (due to global bootstrap definition)
 	orders := admin.Group("/orders")
 	orders.PATCH("/:orderId/items/:itemId/status", deps.Order.UpdateOrderItemStatus)
 
