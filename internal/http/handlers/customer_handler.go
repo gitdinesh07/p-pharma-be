@@ -3,7 +3,9 @@ package handlers
 import (
 	"net/http"
 
+	"ppharma/backend/internal/domain/common"
 	"ppharma/backend/internal/domain/customer"
+	"ppharma/backend/internal/http/middleware"
 	"ppharma/backend/pkg/api"
 
 	"github.com/gin-gonic/gin"
@@ -35,15 +37,28 @@ func (h *CustomerHandler) CreateCustomer(c *gin.Context) {
 		return
 	}
 
-	cust := customer.Customer{
-		Name:     req.Name,
-		Email:    req.Email,
-		Mobile:   req.Mobile,
-		Password: req.Password,
-		PhotoURL: req.PhotoURL,
-		Gender:   req.Gender,
-		Age:      req.Age,
+	var signupSource customer.SignupSource
+	if val, ok := c.Get(middleware.ClientInfoKey); ok {
+		info, _ := val.(common.ClientAppInfo)
+		signupSource.Source = info.Source
+		signupSource.ClientAppInfo.AppVersion = info.AppVersion
+		signupSource.ClientAppInfo.DeviceType = info.DeviceType
+		signupSource.ClientAppInfo.DeviceID = info.DeviceID
+		signupSource.ClientAppInfo.OSVersion = ""
+		signupSource.ClientAppInfo.DeviceModel = ""
 	}
+
+	cust := customer.Customer{
+		Name:         req.Name,
+		Email:        req.Email,
+		Mobile:       req.Mobile,
+		Password:     req.Password,
+		PhotoURL:     req.PhotoURL,
+		Gender:       req.Gender,
+		Age:          req.Age,
+		SignupSource: signupSource,
+	}
+
 	if req.Address.ValidateAddress() == nil {
 		cust.Address = append(cust.Address, req.Address)
 	}
@@ -82,3 +97,23 @@ func (h *CustomerHandler) UpdateCustomer(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, api.APIResponse[customer.Customer]{Success: true, Data: &cust})
 }
+
+type VerifyOTPRequest struct {
+	Identifier string `json:"identifier" binding:"required"`
+	OTP        string `json:"otp" binding:"required"`
+}
+
+// func (h *CustomerHandler) Verify(c *gin.Context) {
+// 	var req VerifyOTPRequest
+// 	if err := c.ShouldBindJSON(&req); err != nil {
+// 		c.JSON(http.StatusBadRequest, api.APIResponse[any]{Success: false, Error: &api.APIError{Code: "BAD_REQUEST", Message: err.Error()}})
+// 		return
+// 	}
+
+// 	if err := h.service.VerifyOTP(req.Identifier, req.OTP); err != nil {
+// 		c.JSON(http.StatusUnauthorized, api.APIResponse[any]{Success: false, Error: &api.APIError{Code: "VERIFY_FAILED", Message: err.Error()}})
+// 		return
+// 	}
+
+// 	c.JSON(http.StatusOK, api.APIResponse[any]{Success: true, Message: "OTP verified successfully"})
+// }

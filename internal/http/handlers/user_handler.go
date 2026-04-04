@@ -108,3 +108,23 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 		Data:    u,
 	})
 }
+
+type VerifyUserOTPRequest struct {
+	Identifier string `json:"identifier" binding:"required"`
+	OTP        string `json:"otp" binding:"required"`
+}
+
+func (h *UserHandler) VerifyOTP(c *gin.Context) {
+	var req VerifyUserOTPRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, api.APIResponse[any]{Success: false, Error: &api.APIError{Code: "BAD_REQUEST", Message: err.Error()}})
+		return
+	}
+
+	if err := h.userService.VerifyOTP(req.Identifier, req.OTP); err != nil {
+		c.JSON(http.StatusUnauthorized, api.APIResponse[any]{Success: false, Error: &api.APIError{Code: "VERIFY_FAILED", Message: err.Error()}})
+		return
+	}
+
+	c.JSON(http.StatusOK, api.APIResponse[any]{Success: true, Message: "OTP verified successfully"})
+}

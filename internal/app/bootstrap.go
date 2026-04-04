@@ -13,13 +13,14 @@ import (
 	"ppharma/backend/internal/http/routes"
 	routesv1 "ppharma/backend/internal/http/routes/v1"
 	repomemory "ppharma/backend/internal/repository/memory"
-	appservice "ppharma/backend/internal/service"
 	"ppharma/backend/internal/repository/mongo"
+	appservice "ppharma/backend/internal/service"
 	"ppharma/backend/support-pkg/auth/apikey"
 	jwtinfra "ppharma/backend/support-pkg/auth/jwt"
 	cachememory "ppharma/backend/support-pkg/cache/memory"
 	mongowrap "ppharma/backend/support-pkg/db/mongo"
 	zaplogger "ppharma/backend/support-pkg/logger/zap"
+	"ppharma/backend/support-pkg/notification"
 	"ppharma/backend/support-pkg/queue/filequeue"
 
 	"github.com/gin-gonic/gin"
@@ -78,13 +79,16 @@ func Build(cfg config.Config) (*Application, error) {
 	userRepo := mongo.NewUserRepository(mongoDbWrap)
 	jwtProvider := jwtinfra.NewProvider(cfg.JWTSecret)
 
+	// Notification Sender Mock initialization
+	consoleSender := notification.NewConsoleSender()
+
 	authService := appservice.NewAuthService(customerRepo, userRepo, jwtProvider)
 	authHandler := handlers.NewAuthHandler(authService)
 
-	customerService := customer.NewService(customerRepo)
+	customerService := customer.NewService(customerRepo, consoleSender, consoleSender)
 	customerHandler := handlers.NewCustomerHandler(customerService)
 
-	userService := appservice.NewUserService(userRepo)
+	userService := appservice.NewUserService(userRepo, consoleSender, consoleSender)
 	userHandler := handlers.NewUserHandler(userService)
 
 	productHandler := handlers.NewProductHandler()
@@ -105,7 +109,7 @@ func Build(cfg config.Config) (*Application, error) {
 	}
 
 	engine := gin.New()
-	engine.Use(gin.Recovery(), middleware.RequestLogger(logger))
+	engine.Use(gin.Recovery(), middleware.RequestLogger(logger), middleware.ClientInfo())
 
 	routeDeps := routesv1.Deps{
 		Auth:         authHandler,
@@ -119,7 +123,7 @@ func Build(cfg config.Config) (*Application, error) {
 	}
 
 	routes.RegisterHealth(engine)
-	if cfg.AppEnv != "production" {
+	if !cfg.IsProduction() {
 		routes.RegisterSwagger(engine)
 	}
 

@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 type InternalAPIKeyConfig struct {
-	ID     string `json:"ID"`
-	Key    string `json:"KEY"`
+	ID     string   `json:"ID"`
+	Key    string   `json:"KEY"`
 	Scopes []string `json:"SCOPES"`
 }
 
@@ -31,6 +32,10 @@ type Config struct {
 	WorkerConsumerID  string                 `json:"WORKER_CONSUMER_ID"`
 }
 
+func (c *Config) IsProduction() bool {
+	return strings.ToLower(c.AppEnv) == "production" || strings.ToLower(c.AppEnv) == "prod"
+}
+
 func defaultConfig() Config {
 	return Config{
 		AppEnv:            "development",
@@ -47,12 +52,12 @@ func defaultConfig() Config {
 
 func Load() (Config, error) {
 	cfg := defaultConfig()
-	
+
 	cleanPath := filepath.Clean("config.json")
 	data, err := os.ReadFile(cleanPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return cfg, nil // Fallback natively to default configuration 
+			return cfg, nil // Fallback natively to default configuration
 		}
 		return Config{}, fmt.Errorf("failed to read %s: %w", cleanPath, err)
 	}

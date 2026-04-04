@@ -20,22 +20,45 @@ const (
 )
 
 type Customer struct {
-	ID        string     `json:"id" bson:"_id"`
-	Name      string     `json:"name" bson:"name"`
-	Email     string     `json:"email,omitempty" bson:"email,omitempty"`
-	Mobile    string     `json:"mobile,omitempty" bson:"mobile,omitempty"`
-	Password  string     `json:"-" bson:"password,omitempty"`
-	PhotoURL  string     `json:"photo_url,omitempty" bson:"photo_url,omitempty"`
-	Gender    GenderEnum `json:"gender,omitempty" bson:"gender,omitempty"`
-	Age       int        `json:"age,omitempty" bson:"age,omitempty"`
-	Address   []Address  `json:"address,omitempty" bson:"address,omitempty"`
-	CreatedAt time.Time  `json:"created_at" bson:"created_at"`
-	UpdatedAt time.Time  `json:"updated_at" bson:"updated_at"`
+	ID           string       `json:"id" bson:"_id"`
+	Name         string       `json:"name" bson:"name"`
+	Email        string       `json:"email,omitempty" bson:"email,omitempty"`
+	Mobile       string       `json:"mobile,omitempty" bson:"mobile,omitempty"`
+	Password     string       `json:"-" bson:"password,omitempty"`
+	PhotoURL     string       `json:"photo_url,omitempty" bson:"photo_url,omitempty"`
+	Gender       GenderEnum   `json:"gender,omitempty" bson:"gender,omitempty"`
+	Age          int          `json:"age,omitempty" bson:"age,omitempty"`
+	Address      []Address    `json:"address,omitempty" bson:"address,omitempty"`
+	IsVerified   bool         `json:"is_verified" bson:"is_verified"`
+	IsActive     bool         `json:"is_active" bson:"is_active"`
+	LoginInfo    LoginInfo    `json:"login_info" bson:"login_info"`
+	SignupSource SignupSource `json:"signup_source" bson:"signup_source"`
+	CreatedAt    time.Time    `json:"created_at" bson:"created_at"`
+	UpdatedAt    time.Time    `json:"updated_at" bson:"updated_at"`
+}
+
+type LoginInfo struct {
+	LastLoginAt   time.Time `json:"last_login_at" bson:"last_login_at"`
+	LastLoginIP   string    `json:"last_login_ip" bson:"last_login_ip"`
+	LoginAttempts int       `json:"login_attempts" bson:"login_attempts"`
+	OTP           string    `json:"-" bson:"otp,omitempty"`
+	OTPExpiry     time.Time `json:"-" bson:"otp_expiry,omitempty"`
 }
 
 type GeoLocation struct {
 	Type        string    `json:"type" bson:"type"`               // e.g., "Point"
 	Coordinates []float64 `json:"coordinates" bson:"coordinates"` // User's [longitude, latitude]
+}
+
+type SignupSource struct {
+	Source        string `json:"source" bson:"source"` // e.g., "mobile", "email", "google", "facebook"
+	ClientAppInfo struct {
+		AppVersion  string `json:"app_version" bson:"app_version"`
+		DeviceType  string `json:"device_type" bson:"device_type"`
+		DeviceID    string `json:"device_id" bson:"device_id"`
+		OSVersion   string `json:"os_version" bson:"os_version"`
+		DeviceModel string `json:"device_model" bson:"device_model"`
+	} `json:"client_app_info" bson:"client_app_info"`
 }
 
 type Address struct {

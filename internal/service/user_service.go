@@ -4,20 +4,26 @@ import (
 	"errors"
 	"time"
 
+	"ppharma/backend/internal/domain/user"
+	"ppharma/backend/support-pkg/notification"
+
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
-	"ppharma/backend/internal/domain/user"
 )
 
 type UserService struct {
-	repo user.Repository
-	now  func() time.Time
+	repo        user.Repository
+	emailSender notification.EmailSender
+	smsSender   notification.SMSSender
+	now         func() time.Time
 }
 
-func NewUserService(repo user.Repository) *UserService {
+func NewUserService(repo user.Repository, emailSender notification.EmailSender, smsSender notification.SMSSender) *UserService {
 	return &UserService{
-		repo: repo,
-		now:  time.Now,
+		repo:        repo,
+		emailSender: emailSender,
+		smsSender:   smsSender,
+		now:         time.Now,
 	}
 }
 
@@ -56,10 +62,38 @@ func (s *UserService) CreateUser(u *user.User) error {
 		u.Password = string(hashed)
 	}
 
+	u.IsVerified = false
+
+	// if u.Email != "" && s.emailSender != nil {
+	// 	go s.emailSender.SendEmail(context.Background(), []string{u.Email}, "Your OTP Code", "Your code is: "+u.OTP, false)
+	// }
+	// if u.Mobile != "" && s.smsSender != nil {
+	// 	go s.smsSender.SendSMS(context.Background(), u.Mobile, "Your code is: "+u.OTP)
+	// }
+
 	u.CreatedAt = s.now().UTC()
 	u.UpdatedAt = s.now().UTC()
 
 	return s.repo.Create(u)
+}
+
+func (s *UserService) VerifyOTP(identifier string, otp string) error {
+	u, err := s.repo.GetByEmail(identifier)
+	if err != nil {
+		u, err = s.repo.GetByMobile(identifier)
+		if err != nil {
+			return errors.New("user not found")
+		}
+	}
+
+	if u.IsVerified {
+		return errors.New("user already verified")
+	}
+
+	u.IsVerified = true
+	u.UpdatedAt = s.now().UTC()
+
+	return s.repo.Update(u)
 }
 
 func (s *UserService) UpdateUser(u *user.User) error {

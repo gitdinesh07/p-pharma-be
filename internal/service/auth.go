@@ -5,11 +5,12 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/crypto/bcrypt"
 	"ppharma/backend/internal/domain/common"
 	"ppharma/backend/internal/domain/customer"
 	"ppharma/backend/internal/domain/user"
 	"ppharma/backend/support-pkg/auth/jwt"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 var (
@@ -44,7 +45,7 @@ func (s *AuthService) CustomerLogin(identifier, password string) (string, error)
 		} else {
 			mobile = identifier
 		}
-		return s.jwtProvider.GenerateToken(&common.Principal{ID: "mock-customer-id", Role: "customer", Email: email, Mobile: mobile}, 30*24*time.Hour)
+		return s.createCustomerToken(&customer.Customer{ID: "Test-customer-id", Email: email, Mobile: mobile})
 	}
 
 	if s.customerRepo == nil {
@@ -68,7 +69,31 @@ func (s *AuthService) CustomerLogin(identifier, password string) (string, error)
 		return "", ErrInvalidCredentials
 	}
 
-	token, err := s.jwtProvider.GenerateToken(&common.Principal{ID: cust.ID, Role: "customer", Email: cust.Email, Mobile: cust.Mobile}, 30*24*time.Hour)
+	token, err := s.createCustomerToken(cust)
+	if err != nil {
+		return "", ErrInternalError
+	}
+	return token, nil
+}
+
+func (s *AuthService) VerifyCustomerOtpGenerateToken(identifier, otp string) (string, error) {
+	if s.isTestUser(identifier, "test") {
+		return s.createCustomerToken(&customer.Customer{ID: "Test-customer-id", Email: identifier, Mobile: identifier})
+	}
+
+	if s.customerRepo == nil {
+		return "", ErrInvalidCredentials
+	}
+
+	var custService *customer.Service
+	var err error
+
+	cust, err := custService.VerifyOTP(identifier, otp)
+	if err != nil {
+		return "", ErrInvalidCredentials
+	}
+
+	token, err := s.createCustomerToken(cust)
 	if err != nil {
 		return "", ErrInternalError
 	}
@@ -118,7 +143,7 @@ func (s *AuthService) UserLogin(identifier, password string) (string, error) {
 		} else {
 			mobile = identifier
 		}
-		return s.jwtProvider.GenerateToken(&common.Principal{ID: "mock-user-id", Role: "admin", Email: email, Mobile: mobile}, 24*time.Hour)
+		return s.createUserAdminToken(&user.User{ID: "mock-user-id", Role: "admin", Email: email, Mobile: mobile})
 	}
 
 	if s.userRepo == nil {
@@ -147,4 +172,12 @@ func (s *AuthService) UserLogin(identifier, password string) (string, error) {
 		return "", ErrInternalError
 	}
 	return token, nil
+}
+
+func (s *AuthService) createCustomerToken(cust *customer.Customer) (string, error) {
+	return s.jwtProvider.GenerateToken(&common.Principal{ID: cust.ID, Role: "customer", Email: cust.Email, Mobile: cust.Mobile}, 30*24*time.Hour)
+}
+
+func (s *AuthService) createUserAdminToken(u *user.User) (string, error) {
+	return s.jwtProvider.GenerateToken(&common.Principal{ID: u.ID, Role: string(u.Role), Email: u.Email, Mobile: u.Mobile}, 24*time.Hour)
 }

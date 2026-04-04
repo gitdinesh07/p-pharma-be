@@ -25,6 +25,16 @@ type LoginRequest struct {
 	Password   string `json:"password" binding:"required"`
 }
 
+type ResetPasswordRequest struct {
+	Identifier  string `json:"identifier" binding:"required"`
+	NewPassword string `json:"new_password" binding:"required"`
+}
+
+type VerifyCustomerOtpGenerateTokenRequest struct {
+	Identifier string `json:"identifier" binding:"required"`
+	OTP        string `json:"otp" binding:"required"`
+}
+
 func (h *AuthHandler) CustomerLogin(c *gin.Context) {
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -46,11 +56,6 @@ func (h *AuthHandler) CustomerLogin(c *gin.Context) {
 		Success: true,
 		Data:    &map[string]string{"access_token": token},
 	})
-}
-
-type ResetPasswordRequest struct {
-	Identifier  string `json:"identifier" binding:"required"`
-	NewPassword string `json:"new_password" binding:"required"`
 }
 
 func (h *AuthHandler) ResetCustomerPassword(c *gin.Context) {
@@ -116,4 +121,27 @@ func (h *AuthHandler) ListSessions(c *gin.Context) {
 
 func (h *AuthHandler) RevokeSession(c *gin.Context) {
 	c.JSON(http.StatusOK, api.APIResponse[map[string]string]{Success: true, Data: &map[string]string{"status": "session revoked"}})
+}
+
+func (h *AuthHandler) VerifyCustomerOtpGenerateToken(c *gin.Context) {
+	var req VerifyCustomerOtpGenerateTokenRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, api.APIResponse[any]{Success: false, Error: &api.APIError{Code: "BAD_REQUEST", Message: err.Error()}})
+		return
+	}
+
+	token, err := h.authService.VerifyCustomerOtpGenerateToken(req.Identifier, req.OTP)
+	if err != nil {
+		if errors.Is(err, service.ErrInvalidCredentials) {
+			c.JSON(http.StatusUnauthorized, api.APIResponse[any]{Success: false, Error: &api.APIError{Code: "UNAUTHORIZED", Message: err.Error()}})
+		} else {
+			c.JSON(http.StatusInternalServerError, api.APIResponse[any]{Success: false, Error: &api.APIError{Code: "INTERNAL_ERROR", Message: err.Error()}})
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, api.APIResponse[map[string]string]{
+		Success: true,
+		Data:    &map[string]string{"access_token": token},
+	})
 }

@@ -2,6 +2,13 @@ package common
 
 import "context"
 
+type ClientAppInfo struct {
+	AppVersion string `json:"app_version"`
+	DeviceType string `json:"device_type"`
+	DeviceID   string `json:"device_id"`
+	Source     string `json:"source"`
+}
+
 type Logger interface {
 	Debug(ctx context.Context, msg string, fields ...Field)
 	Info(ctx context.Context, msg string, fields ...Field)
