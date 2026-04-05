@@ -1,4 +1,4 @@
-package service
+package auth
 
 import (
 	"errors"
@@ -20,12 +20,14 @@ var (
 )
 
 type AuthService struct {
-	customerRepo customer.Repository
-	userRepo     user.Repository
-	jwtProvider  *jwt.Provider
+	customerRepo    customer.Repository
+	customerService *customer.Service
+	userRepo        user.Repository
+	userService     *user.Service
+	jwtProvider     *jwt.Provider
 }
 
-func NewAuthService(customerRepo customer.Repository, userRepo user.Repository, jwtProvider *jwt.Provider) *AuthService {
+func NewAuthService(customerRepo customer.Repository, customerService *customer.Service, userRepo user.Repository, userService *user.Service, jwtProvider *jwt.Provider) *AuthService {
 	return &AuthService{
 		customerRepo: customerRepo,
 		userRepo:     userRepo,
@@ -33,19 +35,15 @@ func NewAuthService(customerRepo customer.Repository, userRepo user.Repository, 
 	}
 }
 
-func (s *AuthService) isTestUser(identifier, password string) bool {
-	return (identifier == "test@gmail.com" || identifier == "911122334455") && password == "test"
-}
-
-func (s *AuthService) CustomerLogin(identifier, password string) (string, error) {
-	if s.isTestUser(identifier, password) {
+func (s *AuthService) CustomerLogin(identifier, password, otp string) (string, error) {
+	if s.customerService.IsTestCustomer(identifier, password) {
 		var email, mobile string
 		if strings.Contains(identifier, "@") {
 			email = identifier
 		} else {
 			mobile = identifier
 		}
-		return s.createCustomerToken(&customer.Customer{ID: "Test-customer-id", Email: email, Mobile: mobile})
+		return s.createCustomerToken(&customer.Customer{ID: common.TEST_CUSTOMER_ID, Email: email, Mobile: mobile})
 	}
 
 	if s.customerRepo == nil {
@@ -55,10 +53,10 @@ func (s *AuthService) CustomerLogin(identifier, password string) (string, error)
 	var cust *customer.Customer
 	var err error
 
-	if strings.Contains(identifier, "@") {
-		cust, err = s.customerRepo.GetByEmail(identifier)
+	if otp != "" {
+		cust, err = s.customerService.VerifyOTP(identifier, otp)
 	} else {
-		cust, err = s.customerRepo.GetByMobile(identifier)
+		cust, err = s.customerService.GetCustomerByIdentifier(identifier)
 	}
 
 	if err != nil || cust == nil {
@@ -76,32 +74,49 @@ func (s *AuthService) CustomerLogin(identifier, password string) (string, error)
 	return token, nil
 }
 
-func (s *AuthService) VerifyCustomerOtpGenerateToken(identifier, otp string) (string, error) {
-	if s.isTestUser(identifier, "test") {
-		return s.createCustomerToken(&customer.Customer{ID: "Test-customer-id", Email: identifier, Mobile: identifier})
+func (s *AuthService) SendVerificationOtp(identifier string) error {
+	if s.customerService.IsTestCustomer(identifier, "") {
+		return nil
 	}
 
 	if s.customerRepo == nil {
-		return "", ErrInvalidCredentials
+		return ErrInvalidCredentials
 	}
 
-	var custService *customer.Service
-	var err error
-
-	cust, err := custService.VerifyOTP(identifier, otp)
+	err := s.customerService.SendCustomerOtp(identifier)
 	if err != nil {
-		return "", ErrInvalidCredentials
+		return ErrInternalError
 	}
 
-	token, err := s.createCustomerToken(cust)
-	if err != nil {
-		return "", ErrInternalError
-	}
-	return token, nil
+	return nil
 }
 
+// func (s *AuthService) VerifyCustomerOtpGenerateToken(identifier, otp string) (string, error) {
+// 	if s.customerService.IsTestCustomer(identifier, otp) {
+// 		return s.createCustomerToken(&customer.Customer{ID: common.TEST_CUSTOMER_ID, Email: identifier, Mobile: identifier})
+// 	}
+
+// 	if s.customerRepo == nil {
+// 		return "", ErrInvalidCredentials
+// 	}
+
+// 	var custService *customer.Service
+// 	var err error
+
+// 	cust, err := custService.VerifyOTP(identifier, otp)
+// 	if err != nil {
+// 		return "", ErrInvalidCredentials
+// 	}
+
+// 	token, err := s.createCustomerToken(cust)
+// 	if err != nil {
+// 		return "", ErrInternalError
+// 	}
+// 	return token, nil
+// }
+
 func (s *AuthService) ResetCustomerPassword(identifier, newPassword string) error {
-	if s.isTestUser(identifier, "test") {
+	if s.customerService.IsTestCustomer(identifier, newPassword) {
 		return nil
 	}
 
@@ -136,7 +151,7 @@ func (s *AuthService) ResetCustomerPassword(identifier, newPassword string) erro
 }
 
 func (s *AuthService) UserLogin(identifier, password string) (string, error) {
-	if s.isTestUser(identifier, password) {
+	if s.userService.IsTestUser(identifier, password) {
 		var email, mobile string
 		if strings.Contains(identifier, "@") {
 			email = identifier

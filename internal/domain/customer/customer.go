@@ -4,6 +4,8 @@ import (
 	"errors"
 	"regexp"
 	"time"
+
+	"ppharma/backend/internal/domain/common"
 )
 
 var (
@@ -138,6 +140,10 @@ func (a *Address) ValidateAddress() error {
 		a.IsDefault = true
 	}
 	return nil
+}
+
+func (c *Customer) IsTestCustomer() bool {
+	return c.Email == common.TEST_CUSTOMER_EMAIL && c.Mobile == common.TEST_CUSTOMER_MOBILE
 }
 
 type Repository interface {

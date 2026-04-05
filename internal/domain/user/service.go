@@ -1,25 +1,25 @@
-package service
+package user
 
 import (
 	"errors"
 	"time"
 
-	"ppharma/backend/internal/domain/user"
+	"ppharma/backend/internal/domain/common"
 	"ppharma/backend/support-pkg/notification"
 
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
-type UserService struct {
-	repo        user.Repository
+type Service struct {
+	repo        Repository
 	emailSender notification.EmailSender
 	smsSender   notification.SMSSender
 	now         func() time.Time
 }
 
-func NewUserService(repo user.Repository, emailSender notification.EmailSender, smsSender notification.SMSSender) *UserService {
-	return &UserService{
+func NewService(repo Repository, emailSender notification.EmailSender, smsSender notification.SMSSender) *Service {
+	return &Service{
 		repo:        repo,
 		emailSender: emailSender,
 		smsSender:   smsSender,
@@ -27,7 +27,7 @@ func NewUserService(repo user.Repository, emailSender notification.EmailSender, 
 	}
 }
 
-func (s *UserService) checkDuplicate(u *user.User) error {
+func (s *Service) checkDuplicate(u *User) error {
 	if u.Email != "" {
 		if ex, _ := s.repo.GetByEmail(u.Email); ex != nil && ex.ID != u.ID {
 			return errors.New("user already exists with this email")
@@ -41,7 +41,7 @@ func (s *UserService) checkDuplicate(u *user.User) error {
 	return nil
 }
 
-func (s *UserService) CreateUser(u *user.User) error {
+func (s *Service) CreateUser(u *User) error {
 	if err := u.Validate(); err != nil {
 		return err
 	}
@@ -77,7 +77,7 @@ func (s *UserService) CreateUser(u *user.User) error {
 	return s.repo.Create(u)
 }
 
-func (s *UserService) VerifyOTP(identifier string, otp string) error {
+func (s *Service) VerifyOTP(identifier string, otp string) error {
 	u, err := s.repo.GetByEmail(identifier)
 	if err != nil {
 		u, err = s.repo.GetByMobile(identifier)
@@ -96,7 +96,7 @@ func (s *UserService) VerifyOTP(identifier string, otp string) error {
 	return s.repo.Update(u)
 }
 
-func (s *UserService) UpdateUser(u *user.User) error {
+func (s *Service) UpdateUser(u *User) error {
 	if err := u.Validate(); err != nil {
 		return err
 	}
@@ -109,6 +109,10 @@ func (s *UserService) UpdateUser(u *user.User) error {
 	return s.repo.Update(u)
 }
 
-func (s *UserService) GetUser(id string) (*user.User, error) {
+func (s *Service) GetUser(id string) (*User, error) {
 	return s.repo.GetByID(id)
+}
+
+func (s *Service) IsTestUser(identifier, password string) bool {
+	return (identifier == common.TEST_USER_EMAIL || identifier == common.TEST_USER_MOBILE) && (password == common.TEST_USER_PASSWORD || password == common.TEST_USER_OTP)
 }

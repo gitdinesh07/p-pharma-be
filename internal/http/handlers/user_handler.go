@@ -3,17 +3,17 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
 	"ppharma/backend/internal/domain/user"
-	"ppharma/backend/internal/service"
 	"ppharma/backend/pkg/api"
+
+	"github.com/gin-gonic/gin"
 )
 
 type UserHandler struct {
-	userService *service.UserService
+	userService *user.Service
 }
 
-func NewUserHandler(userService *service.UserService) *UserHandler {
+func NewUserHandler(userService *user.Service) *UserHandler {
 	return &UserHandler{
 		userService: userService,
 	}

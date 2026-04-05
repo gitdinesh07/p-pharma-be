@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"ppharma/backend/internal/config"
+	appservice "ppharma/backend/internal/domain/auth"
 	"ppharma/backend/internal/domain/common"
 	"ppharma/backend/internal/domain/customer"
 	"ppharma/backend/internal/domain/order"
@@ -15,7 +16,8 @@ import (
 	routesv1 "ppharma/backend/internal/http/routes/v1"
 	repomemory "ppharma/backend/internal/repository/memory"
 	"ppharma/backend/internal/repository/mongo"
-	appservice "ppharma/backend/internal/service"
+
+	// appservice "ppharma/backend/internal/service"
 	"ppharma/backend/support-pkg/auth/apikey"
 	jwtinfra "ppharma/backend/support-pkg/auth/jwt"
 	cachememory "ppharma/backend/support-pkg/cache/memory"
@@ -83,14 +85,14 @@ func Build(cfg config.Config) (*Application, error) {
 	// Notification Sender Mock initialization
 	consoleSender := notification.NewConsoleSender()
 
-	authService := appservice.NewAuthService(customerRepo, userRepo, jwtProvider)
-	authHandler := handlers.NewAuthHandler(authService)
-
 	customerService := customer.NewService(customerRepo, consoleSender, consoleSender)
 	customerHandler := handlers.NewCustomerHandler(customerService)
 
-	userService := appservice.NewUserService(userRepo, consoleSender, consoleSender)
+	userService := user.NewService(userRepo, consoleSender, consoleSender)
 	userHandler := handlers.NewUserHandler(userService)
+
+	authService := appservice.NewAuthService(customerRepo, customerService, userRepo, userService, jwtProvider)
+	authHandler := handlers.NewAuthHandler(authService)
 
 	productHandler := handlers.NewProductHandler()
 	paymentHandler := handlers.NewPaymentHandler()

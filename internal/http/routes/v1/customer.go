@@ -3,7 +3,7 @@ package v1
 import "github.com/gin-gonic/gin"
 
 func RegisterCustomerPublic(customer *gin.RouterGroup, deps Deps) {
-	customer.POST("", deps.Customer.CreateCustomer)
+	customer.POST("/signup", deps.Customer.CreateCustomer)
 }
 
 func RegisterCustomer(customer *gin.RouterGroup, deps Deps) {
