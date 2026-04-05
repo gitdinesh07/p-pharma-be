@@ -1,6 +1,8 @@
 package common
 
 const (
+	PROJECT_NAME = "p-pharma"
+
 	TEST_CUSTOMER_EMAIL    = "test-customer@gmail.com"
 	TEST_CUSTOMER_MOBILE   = "911122334455"
 	TEST_CUSTOMER_PASSWORD = "customer"

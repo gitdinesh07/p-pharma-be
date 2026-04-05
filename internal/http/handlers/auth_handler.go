@@ -36,51 +36,6 @@ type VerifyCustomerOtpGenerateTokenRequest struct {
 	OTP        string `json:"otp" binding:"required"`
 }
 
-// func (h *AuthHandler) CustomerRegister(c *gin.Context) {
-// 	var req LoginRequest
-// 	if err := c.ShouldBindJSON(&req); err != nil {
-// 		c.JSON(http.StatusBadRequest, api.APIResponse[any]{Success: false, Error: &api.APIError{Code: "BAD_REQUEST", Message: err.Error()}})
-// 		return
-// 	}
-
-// 	token, err := h.authService.CustomerRegister(req.Identifier, req.Password, req.Otp)
-// 	if err != nil {
-// 		if errors.Is(err, auth.ErrInvalidCredentials) {
-// 			c.JSON(http.StatusUnauthorized, api.APIResponse[any]{Success: false, Error: &api.APIError{Code: "UNAUTHORIZED", Message: err.Error()}})
-// 		} else {
-// 			c.JSON(http.StatusInternalServerError, api.APIResponse[any]{Success: false, Error: &api.APIError{Code: "INTERNAL_ERROR", Message: err.Error()}})
-// 		}
-// 		return
-// 	}
-
-// 	c.JSON(http.StatusOK, api.APIResponse[map[string]string]{
-// 		Success: true,
-// 		Data:    &map[string]string{"access_token": token},
-// 	})
-// }
-
-// func (h *AuthHandler) CustomerSendOTP(c *gin.Context) {
-// 	var req LoginRequest
-// 	if err := c.ShouldBindJSON(&req); err != nil {
-// 		c.JSON(http.StatusBadRequest, api.APIResponse[any]{Success: false, Error: &api.APIError{Code: "BAD_REQUEST", Message: err.Error()}})
-// 		return
-// 	}
-
-// 	err := h.authService.CustomerSendOTP(req.Identifier)
-// 	if err != nil {
-// 		if errors.Is(err, auth.ErrInvalidCredentials) {
-// 			c.JSON(http.StatusUnauthorized, api.APIResponse[any]{Success: false, Error: &api.APIError{Code: "UNAUTHORIZED", Message: err.Error()}})
-// 		} else {
-// 			c.JSON(http.StatusInternalServerError, api.APIResponse[any]{Success: false, Error: &api.APIError{Code: "INTERNAL_ERROR", Message: err.Error()}})
-// 		}
-// 		return
-// 	}
-
-// 	c.JSON(http.StatusOK, api.APIResponse[map[string]string]{
-// 		Success: true,
-// 		Data:    &map[string]string{"status": "otp sent successfully"},
-// 	})
-// }
 
 func (h *AuthHandler) LoginHandler(c *gin.Context) {
 	var req LoginRequest
@@ -93,7 +48,7 @@ func (h *AuthHandler) LoginHandler(c *gin.Context) {
 	var err error
 	//admin user login handler
 	if req.IsAdminUserReq {
-		token, err = h.authService.UserLogin(req.Identifier, req.Password)
+		token, err = h.authService.UserLogin(req.Identifier, req.Otp)
 	}
 
 	//customer login handler
@@ -139,28 +94,7 @@ func (h *AuthHandler) ResetCustomerPassword(c *gin.Context) {
 	})
 }
 
-func (h *AuthHandler) UserLogin(c *gin.Context) {
-	var req LoginRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, api.APIResponse[any]{Success: false, Error: &api.APIError{Code: "BAD_REQUEST", Message: err.Error()}})
-		return
-	}
 
-	token, err := h.authService.UserLogin(req.Identifier, req.Password)
-	if err != nil {
-		if errors.Is(err, auth.ErrInvalidCredentials) {
-			c.JSON(http.StatusUnauthorized, api.APIResponse[any]{Success: false, Error: &api.APIError{Code: "UNAUTHORIZED", Message: err.Error()}})
-		} else {
-			c.JSON(http.StatusInternalServerError, api.APIResponse[any]{Success: false, Error: &api.APIError{Code: "INTERNAL_ERROR", Message: err.Error()}})
-		}
-		return
-	}
-
-	c.JSON(http.StatusOK, api.APIResponse[map[string]string]{
-		Success: true,
-		Data:    &map[string]string{"access_token": token},
-	})
-}
 
 func (h *AuthHandler) Refresh(c *gin.Context) {
 	c.JSON(http.StatusOK, api.APIResponse[map[string]string]{
@@ -203,3 +137,24 @@ func (h *AuthHandler) GenerateAndSendOtp(c *gin.Context) {
 		Data:    &map[string]string{"status": "otp sent successfully"},
 	})
 }
+
+func (h *AuthHandler) GenerateTOTP(c *gin.Context) {
+	var req LoginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, api.APIResponse[any]{Success: false, Error: &api.APIError{Code: "BAD_REQUEST", Message: err.Error()}})
+		return
+	}
+
+	secret, qrURL, err := h.authService.GenerateUserTOTPConfig(req.Identifier)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, api.APIResponse[any]{Success: false, Error: &api.APIError{Code: "INTERNAL_ERROR", Message: err.Error()}})
+		return
+	}
+
+	c.JSON(http.StatusOK, api.APIResponse[map[string]string]{
+		Success: true,
+		Data:    &map[string]string{"secret": secret, "qr_url": qrURL},
+	})
+}
+
+

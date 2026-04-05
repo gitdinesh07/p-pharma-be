@@ -10,6 +10,7 @@ import (
 	"ppharma/backend/internal/domain/user"
 	"ppharma/backend/support-pkg/auth/jwt"
 
+	"github.com/pquerna/otp/totp"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -150,8 +151,8 @@ func (s *AuthService) ResetCustomerPassword(identifier, newPassword string) erro
 	return nil
 }
 
-func (s *AuthService) UserLogin(identifier, password string) (string, error) {
-	if s.userService.IsTestUser(identifier, password) {
+func (s *AuthService) UserLogin(identifier, otpCode string) (string, error) {
+	if s.userService.IsTestUser(identifier, otpCode) {
 		var email, mobile string
 		if strings.Contains(identifier, "@") {
 			email = identifier
@@ -165,28 +166,71 @@ func (s *AuthService) UserLogin(identifier, password string) (string, error) {
 		return "", ErrInvalidCredentials
 	}
 
-	var u *user.User
-	var err error
-
-	if strings.Contains(identifier, "@") {
-		u, err = s.userRepo.GetByEmail(identifier)
-	} else {
-		u, err = s.userRepo.GetByMobile(identifier)
-	}
-
-	if err != nil || u == nil {
+	u, err := s.VerifyAndEnableUserTOTP(identifier, otpCode)
+	if err != nil {
 		return "", ErrInvalidCredentials
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password)); err != nil {
-		return "", ErrInvalidCredentials
-	}
-
-	token, err := s.jwtProvider.GenerateToken(&common.Principal{ID: u.ID, Role: string(u.Role), Email: u.Email, Mobile: u.Mobile}, 24*time.Hour)
+	token, err := s.createUserAdminToken(u)
 	if err != nil {
 		return "", ErrInternalError
 	}
 	return token, nil
+}
+
+func (s *AuthService) GenerateUserTOTPConfig(email string) (string, string, error) {
+	if s.userRepo == nil {
+		return "", "", ErrInternalError
+	}
+	if email == "" {
+		return "", "", errors.New("email is required")
+	}
+
+	u, err := s.userRepo.GetByEmail(email)
+	if err != nil || u == nil {
+		return "", "", errors.New("user not found")
+	}
+
+	secret, url, err := s.generateTOTP(email)
+	if err != nil {
+		return "", "", err
+	}
+
+	return secret, url, nil
+}
+
+func (s *AuthService) VerifyAndEnableUserTOTP(email, otpCode string) (*user.User, error) {
+	if email == "" {
+		return nil, errors.New("email is required")
+	}
+	if otpCode == "" {
+		return nil, errors.New("otp code is required")
+	}
+
+	secret, _, err := s.generateTOTP(email)
+	if err != nil {
+		return nil, err
+	}
+	if secret == "" {
+		return nil, errors.New("totp not configured")
+	}
+
+	valid := totp.Validate(otpCode, secret)
+	if !valid {
+		return nil, ErrInvalidCredentials
+	}
+
+	u, err := s.userRepo.GetByEmail(email)
+	if err != nil || u == nil {
+		return nil, errors.New("user not found")
+	}
+
+	u.TOTPEnabled = true
+	u.LastLogin = time.Now()
+	if err := s.userRepo.Update(u); err != nil {
+		return nil, ErrInternalError
+	}
+	return u, nil
 }
 
 func (s *AuthService) createCustomerToken(cust *customer.Customer) (string, error) {
@@ -195,4 +239,19 @@ func (s *AuthService) createCustomerToken(cust *customer.Customer) (string, erro
 
 func (s *AuthService) createUserAdminToken(u *user.User) (string, error) {
 	return s.jwtProvider.GenerateToken(&common.Principal{ID: u.ID, Role: string(u.Role), Email: u.Email, Mobile: u.Mobile}, 24*time.Hour)
+}
+
+func (s *AuthService) generateTOTP(email string) (string, string, error) {
+	if email == "" {
+		return "", "", errors.New("email is required")
+	}
+
+	key, err := totp.Generate(totp.GenerateOpts{
+		Issuer:      common.PROJECT_NAME,
+		AccountName: email,
+	})
+	if err != nil {
+		return "", "", ErrInternalError
+	}
+	return key.Secret(), key.URL(), nil
 }

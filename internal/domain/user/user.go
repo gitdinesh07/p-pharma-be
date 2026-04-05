@@ -21,16 +21,18 @@ const (
 )
 
 type User struct {
-	ID         string    `json:"id" bson:"_id"`
-	Name       string    `json:"name" bson:"name"`
-	Email      string    `json:"email,omitempty" bson:"email,omitempty"`
-	Mobile     string    `json:"mobile,omitempty" bson:"mobile,omitempty"`
-	Password   string    `json:"-" bson:"password,omitempty"`
-	PhotoURL   string    `json:"photo_url,omitempty" bson:"photo_url,omitempty"`
-	Role       Role      `json:"role" bson:"role"`
-	IsVerified bool      `json:"is_verified" bson:"is_verified"`
-	CreatedAt  time.Time `json:"created_at" bson:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at" bson:"updated_at"`
+	ID          string    `json:"id" bson:"_id"`
+	Name        string    `json:"name" bson:"name"`
+	Email       string    `json:"email,omitempty" bson:"email,omitempty"`
+	Mobile      string    `json:"mobile,omitempty" bson:"mobile,omitempty"`
+	Password    string    `json:"-" bson:"password,omitempty"`
+	PhotoURL    string    `json:"photo_url,omitempty" bson:"photo_url,omitempty"`
+	Role        Role      `json:"role" bson:"role"`
+	IsVerified  bool      `json:"is_verified" bson:"is_verified"`
+	TOTPEnabled bool      `json:"totp_enabled" bson:"totp_enabled"`
+	LastLogin   time.Time `json:"last_login,omitempty" bson:"last_login,omitempty"`
+	CreatedAt   time.Time `json:"created_at" bson:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at" bson:"updated_at"`
 }
 
 type Repository interface {

@@ -4,6 +4,8 @@ info:
   version: 1.0.0
 servers:
   - url: http://localhost:4545
+security:
+  - BearerAuth: []
 paths:
   /health/live:
     get:
@@ -11,23 +13,7 @@ paths:
       responses:
         '200':
           description: OK
-  /api/v1/auth/user/verify-otp:
-    post:
-      summary: Verify Admin OTP
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                identifier:
-                  type: string
-                otp:
-                  type: string
-      responses:
-        '200':
-          description: OK
+
   /health/ready:
     get:
       summary: Readiness check
@@ -36,9 +22,9 @@ paths:
           description: Ready
 
   # Auth Routes
-  /api/v1/auth/customer/login:
+  /api/v1/auth/login:
     post:
-      summary: Customer login
+      summary: Login for Customer and Admin
       requestBody:
         required: true
         content:
@@ -51,13 +37,17 @@ paths:
                   description: Mobile or Email
                 password:
                   type: string
+                otp:
+                  type: string
+                is_admin_user_req:
+                  type: boolean
               required:
                 - identifier
-                - password
+                - is_admin_user_req
       responses:
         '200':
           description: OK
-  /api/v1/auth/customer/reset-password:
+  /api/v1/auth/reset-password:
     post:
       summary: Reset Customer Password
       requestBody:
@@ -78,27 +68,7 @@ paths:
       responses:
         '200':
           description: OK
-  /api/v1/auth/user/login:
-    post:
-      summary: User login (internal admin)
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                identifier:
-                  type: string
-                  description: Mobile or Email
-                password:
-                  type: string
-              required:
-                - identifier
-                - password
-      responses:
-        '200':
-          description: OK
+
   /api/v1/auth/refresh:
     post:
       summary: Refresh token
@@ -129,9 +99,48 @@ paths:
       responses:
         '200':
           description: OK
+  /api/v1/auth/send-otp:
+    post:
+      summary: Generate and send OTP strictly to valid user email/mobile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                identifier:
+                  type: string
+                  description: Mobile or Email
+              required:
+                - identifier
+      responses:
+        '200':
+          description: OK
+  /api/v1/auth/generate-totp:
+    post:
+      summary: Generates Google Authenticator TOTP config
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                identifier:
+                  type: string
+                  description: Mobile or Email
+                is_admin_user_req:
+                  type: boolean
+              required:
+                - identifier
+                - is_admin_user_req
+      responses:
+        '200':
+          description: OK
 
   # Customer Routes
-  /api/v1/customer:
+  /api/v1/customer/signup:
     post:
       summary: Create customer
       parameters:
@@ -403,6 +412,11 @@ paths:
           description: OK
 
 components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   parameters:
     AppVersionHeader:
       name: X-App-Version
