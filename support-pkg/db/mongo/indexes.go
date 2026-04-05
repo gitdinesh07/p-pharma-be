@@ -34,6 +34,12 @@ func EnsureIndexes(ctx context.Context, db *mongo.Database) error {
 	if err := ensureConsultationIndexes(ctx, db); err != nil {
 		return err
 	}
+	if err := ensureCommonIndexes(ctx, db); err != nil {
+		return err
+	}
+	if err := ensureDoctorIndexes(ctx, db); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -94,6 +100,20 @@ func ensureConsultationIndexes(ctx context.Context, db *mongo.Database) error {
 		{Keys: bson.D{{Key: "customer_id", Value: 1}, {Key: "scheduled_at", Value: 1}}},
 		{Keys: bson.D{{Key: "meeting.provider_event_id", Value: 1}}},
 		{Keys: bson.D{{Key: "status", Value: 1}}},
+	})
+	return err
+}
+
+func ensureCommonIndexes(ctx context.Context, db *mongo.Database) error {
+	_, err := db.Collection("common").Indexes().CreateMany(ctx, []mongo.IndexModel{
+		{Keys: bson.D{{Key: "type", Value: 1}}},
+	})
+	return err
+}
+
+func ensureDoctorIndexes(ctx context.Context, db *mongo.Database) error {
+	_, err := db.Collection("doctors").Indexes().CreateMany(ctx, []mongo.IndexModel{
+		{Keys: bson.D{{Key: "email", Value: 1}}, Options: options.Index().SetUnique(true).SetSparse(true)},
 	})
 	return err
 }

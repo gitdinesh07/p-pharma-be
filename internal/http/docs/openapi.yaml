@@ -9,6 +9,8 @@ security:
 paths:
   /health/live:
     get:
+      tags:
+        - Health
       summary: Liveness check
       responses:
         '200':
@@ -16,6 +18,8 @@ paths:
 
   /health/ready:
     get:
+      tags:
+        - Health
       summary: Readiness check
       responses:
         '200':
@@ -24,6 +28,8 @@ paths:
   # Auth Routes
   /api/v1/auth/login:
     post:
+      tags:
+        - Auth
       summary: Login for Customer and Admin
       requestBody:
         required: true
@@ -49,6 +55,8 @@ paths:
           description: OK
   /api/v1/auth/reset-password:
     post:
+      tags:
+        - Auth
       summary: Reset Customer Password
       requestBody:
         required: true
@@ -71,24 +79,32 @@ paths:
 
   /api/v1/auth/refresh:
     post:
+      tags:
+        - Auth
       summary: Refresh token
       responses:
         '200':
           description: OK
   /api/v1/auth/logout:
     post:
+      tags:
+        - Auth
       summary: User logout
       responses:
         '200':
           description: OK
   /api/v1/auth/sessions:
     get:
+      tags:
+        - Auth
       summary: List sessions
       responses:
         '200':
           description: OK
   /api/v1/auth/sessions/{sessionId}:
     delete:
+      tags:
+        - Auth
       summary: Revoke session
       parameters:
         - name: sessionId
@@ -101,6 +117,8 @@ paths:
           description: OK
   /api/v1/auth/send-otp:
     post:
+      tags:
+        - Auth
       summary: Generate and send OTP strictly to valid user email/mobile
       requestBody:
         required: true
@@ -119,6 +137,8 @@ paths:
           description: OK
   /api/v1/auth/generate-totp:
     post:
+      tags:
+        - Auth
       summary: Generates Google Authenticator TOTP config
       requestBody:
         required: true
@@ -142,6 +162,8 @@ paths:
   # Customer Routes
   /api/v1/customer/signup:
     post:
+      tags:
+        - Customer
       summary: Create customer
       parameters:
         - $ref: '#/components/parameters/AppVersionHeader'
@@ -176,6 +198,8 @@ paths:
           description: Created
   /api/v1/auth/customer/verify-otp:
     post:
+      tags:
+        - Auth
       summary: Verify OTP
       requestBody:
         required: true
@@ -205,6 +229,8 @@ paths:
                         type: string
   /api/v1/customer/{id}:
     get:
+      tags:
+        - Customer
       summary: Get customer
       parameters:
         - name: id
@@ -216,6 +242,8 @@ paths:
         '200':
           description: OK
     put:
+      tags:
+        - Customer
       summary: Update customer
       parameters:
         - name: id
@@ -229,6 +257,8 @@ paths:
 
   /api/v1/customer/orders/{orderId}:
     get:
+      tags:
+        - Customer
       summary: Get customer order with item statuses
       parameters:
         - name: orderId
@@ -241,6 +271,8 @@ paths:
           description: Order details
   /api/v1/customer/orders/{orderId}/payments:
     get:
+      tags:
+        - Customer
       summary: List order payments
       parameters:
         - name: orderId
@@ -254,12 +286,16 @@ paths:
 
   /api/v1/customer/products:
     get:
+      tags:
+        - Customer
       summary: List products
       responses:
         '200':
           description: OK
   /api/v1/customer/products/{productId}:
     get:
+      tags:
+        - Customer
       summary: Get product
       parameters:
         - name: productId
@@ -273,17 +309,23 @@ paths:
 
   /api/v1/customer/consultations:
     post:
+      tags:
+        - Customer
       summary: Create consultation
       responses:
         '200':
           description: OK
     get:
+      tags:
+        - Customer
       summary: List consultations
       responses:
         '200':
           description: OK
   /api/v1/customer/consultations/{consultationId}:
     get:
+      tags:
+        - Customer
       summary: Get consultation
       parameters:
         - name: consultationId
@@ -298,6 +340,8 @@ paths:
   # Admin Routes
   /api/v1/admin/orders/{orderId}/items/{itemId}/status:
     patch:
+      tags:
+        - Admin
       summary: Update order item status (admin JWT)
       parameters:
         - name: orderId
@@ -316,12 +360,16 @@ paths:
 
   /api/v1/admin/products:
     post:
+      tags:
+        - Admin
       summary: Create product
       responses:
         '200':
           description: OK
   /api/v1/admin/products/{productId}:
     patch:
+      tags:
+        - Admin
       summary: Update product
       parameters:
         - name: productId
@@ -334,6 +382,8 @@ paths:
           description: OK
   /api/v1/admin/inventory/{productId}/stock:
     patch:
+      tags:
+        - Admin
       summary: Update product stock
       parameters:
         - name: productId
@@ -347,6 +397,8 @@ paths:
 
   /api/v1/admin/payments/{paymentId}/status:
     patch:
+      tags:
+        - Admin
       summary: Update payment status
       parameters:
         - name: paymentId
@@ -360,6 +412,8 @@ paths:
 
   /api/v1/admin/consultations/{consultationId}/status:
     patch:
+      tags:
+        - Admin
       summary: Update consultation status
       parameters:
         - name: consultationId
@@ -374,6 +428,8 @@ paths:
   # Admin Internal Routes
   /api/v1/admin/internal/inventory/sync:
     post:
+      tags:
+        - Admin
       summary: Sync inventory
       responses:
         '200':
@@ -381,6 +437,8 @@ paths:
 
   /api/v1/admin/internal/orders/{orderId}/items/{itemId}/status:
     patch:
+      tags:
+        - Admin
       summary: Update order item status (internal API key)
       parameters:
         - name: orderId
@@ -399,6 +457,8 @@ paths:
 
   /api/v1/admin/internal/products/bulk-upsert:
     post:
+      tags:
+        - Admin
       summary: Bulk upsert products
       responses:
         '200':
@@ -406,6 +466,8 @@ paths:
 
   /api/v1/admin/internal/queue/publish:
     post:
+      tags:
+        - Admin
       summary: Publish queue message
       responses:
         '200':
